@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -23,8 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith({SpringExtension.class})
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(PostController.class)
 public class PostControllerServiceMockIT {
 
     @MockBean
@@ -132,6 +132,22 @@ public class PostControllerServiceMockIT {
     }
 
     @Test
+    public void updatePost_EntityNotFound() throws Exception {
+        PostRequest request = new PostRequest();
+        request.setTitle("Title");
+        request.setContent("Content");
+
+        EntityNotFoundException ex = new EntityNotFoundException(1);
+        when(service.update(1, request)).thenThrow(ex);
+
+        mockMvc.perform(put("/post/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message", is("Entity with id=1 not found")));
+    }
+
+    @Test
     void updatePost_TitleNull() throws Exception {
         PostRequest request = new PostRequest();
         request.setTitle(null);
@@ -165,5 +181,15 @@ public class PostControllerServiceMockIT {
                 .andExpect(status().isOk());
         verify(service, times(1)).delete(1);
     }
+
+    @Test
+    public void deletePost_EntityNotFound() throws Exception {
+        EntityNotFoundException ex = new EntityNotFoundException(1);
+        doThrow(ex).when(service).delete(1);
+        mockMvc.perform(delete("/post/1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message", is("Entity with id=1 not found")));
+    }
+
 
 }
