@@ -47,7 +47,7 @@ public class PostControllerIT {
     }
 
     @Test
-    void getPost() throws Exception {
+    void getPost_Ok() throws Exception {
         when(postRepo.findById(1)).thenReturn(Optional.of(post));
 
         mockMvc.perform(MockMvcRequestBuilders.get("/post/1"))
@@ -59,7 +59,7 @@ public class PostControllerIT {
     }
 
     @Test
-    public void getPost_EntityNotFound() throws Exception {
+    public void getPost_EntityNotFound_404Status() throws Exception {
         when(postRepo.findById(1)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/post/1"))
@@ -69,7 +69,7 @@ public class PostControllerIT {
 
 
     @Test
-    void createPost() throws Exception {
+    void createPost_Ok() throws Exception {
         PostRequest request = new PostRequest();
         request.setTitle("Title");
         request.setContent("Content");
@@ -87,7 +87,7 @@ public class PostControllerIT {
     }
 
     @Test
-    void createPost_TitleNull() throws Exception {
+    void createPost_TitleNull_403Status() throws Exception {
         PostRequest request = new PostRequest();
         request.setTitle(null);
         request.setContent("Content");
@@ -99,7 +99,7 @@ public class PostControllerIT {
     }
 
     @Test
-    void createPost_ContentNull() throws Exception {
+    void createPost_ContentNull_403Status() throws Exception {
         PostRequest request = new PostRequest();
         request.setTitle("Title");
         request.setContent(null);
@@ -111,7 +111,7 @@ public class PostControllerIT {
     }
 
     @Test
-    void updatePost() throws Exception {
+    void updatePost_Ok() throws Exception {
         PostRequest request = new PostRequest();
         request.setTitle("TitleNew");
         request.setContent("ContentNew");
@@ -133,7 +133,7 @@ public class PostControllerIT {
     }
 
     @Test
-    void updatePost_TitleNull() throws Exception {
+    void updatePost_TitleNull_403Status() throws Exception {
         PostRequest request = new PostRequest();
         request.setTitle(null);
         request.setContent("Content");
@@ -145,7 +145,7 @@ public class PostControllerIT {
     }
 
     @Test
-    void updatePost_ContentNull() throws Exception {
+    void updatePost_ContentNull_403Status() throws Exception {
         PostRequest request = new PostRequest();
         request.setTitle("Title");
         request.setContent(null);
@@ -157,7 +157,7 @@ public class PostControllerIT {
     }
 
     @Test
-    public void updatePost_EntityNotFound() throws Exception {
+    public void updatePost_EntityNotFound_404Status() throws Exception {
         PostRequest request = new PostRequest();
         request.setTitle("Title");
         request.setContent("Content");
@@ -172,7 +172,7 @@ public class PostControllerIT {
     }
 
     @Test
-    void deletePost() throws Exception {
+    void deletePost_Ok() throws Exception {
         post.setId(1);
         post.setTitle("Title");
         post.setContent("Content");
@@ -184,7 +184,7 @@ public class PostControllerIT {
     }
 
     @Test
-    public void deletePost_EntityNotFound() throws Exception {
+    public void deletePost_EntityNotFound_404Status() throws Exception {
         when(postRepo.findById(1)).thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/post/1"))
