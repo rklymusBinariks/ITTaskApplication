@@ -1,10 +1,10 @@
 package com.rklymus.ittask;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,41 +38,43 @@ public class PostControllerIT {
 
     private final Post post = new Post();
 
+    private final Faker faker = new Faker();
+
     @BeforeEach
     void init() {
-        post.setId(1);
-        post.setTitle("Title");
-        post.setContent("Content");
+        post.setId(faker.number().randomDigitNotZero());
+        post.setTitle(faker.pokemon().name());
+        post.setContent(faker.pokemon().location());
         post.setTimestamp(LocalDateTime.of(2023, 5, 14, 0, 0));
     }
 
     @Test
     void getPost_Ok() throws Exception {
-        when(postRepo.findById(1)).thenReturn(Optional.of(post));
+        when(postRepo.findById(post.getId())).thenReturn(Optional.of(post));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/post/1"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/post/" + post.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.title", is("Title")))
-                .andExpect(jsonPath("$.content", is("Content")))
+                .andExpect(jsonPath("$.id", is(post.getId())))
+                .andExpect(jsonPath("$.title", is(post.getTitle())))
+                .andExpect(jsonPath("$.content", is(post.getContent())))
                 .andExpect(jsonPath("$.timestamp", is("2023-05-14T00:00:00")));
     }
 
     @Test
     public void getPost_EntityNotFound_404Status() throws Exception {
-        when(postRepo.findById(1)).thenReturn(Optional.empty());
+        when(postRepo.findById(post.getId())).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/post/1"))
+        mockMvc.perform(get("/post/" + post.getId()))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", is("Entity with id=1 not found")));
+                .andExpect(jsonPath("$.message", is("Entity with id=" + post.getId() + " not found")));
     }
 
 
     @Test
     void createPost_Ok() throws Exception {
         PostRequest request = new PostRequest();
-        request.setTitle("Title");
-        request.setContent("Content");
+        request.setTitle(post.getTitle());
+        request.setContent(post.getContent());
 
         when(postRepo.save(any(Post.class))).thenReturn(post);
 
@@ -80,9 +82,9 @@ public class PostControllerIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.title", is("Title")))
-                .andExpect(jsonPath("$.content", is("Content")))
+                .andExpect(jsonPath("$.id", is(post.getId())))
+                .andExpect(jsonPath("$.title", is(post.getTitle())))
+                .andExpect(jsonPath("$.content", is(post.getContent())))
                 .andExpect(jsonPath("$.timestamp", is("2023-05-14T00:00:00")));
     }
 
@@ -90,7 +92,7 @@ public class PostControllerIT {
     void createPost_TitleNull_403Status() throws Exception {
         PostRequest request = new PostRequest();
         request.setTitle(null);
-        request.setContent("Content");
+        request.setContent(post.getContent());
 
         mockMvc.perform(post("/post")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -101,7 +103,7 @@ public class PostControllerIT {
     @Test
     void createPost_ContentNull_403Status() throws Exception {
         PostRequest request = new PostRequest();
-        request.setTitle("Title");
+        request.setTitle(post.getTitle());
         request.setContent(null);
 
         mockMvc.perform(post("/post")
@@ -113,32 +115,35 @@ public class PostControllerIT {
     @Test
     void updatePost_Ok() throws Exception {
         PostRequest request = new PostRequest();
-        request.setTitle("TitleNew");
-        request.setContent("ContentNew");
+        String newTitle = faker.pokemon().name();
+        String newContent = faker.pokemon().location();
+        request.setTitle(newTitle);
+        request.setContent(newContent);
 
-        post.setTitle("TitleNew");
-        post.setContent("ContentNew");
+        post.setTitle(newTitle);
+        post.setContent(newContent);
 
-        when(postRepo.findById(1)).thenReturn(Optional.of(post));
+        when(postRepo.findById(post.getId())).thenReturn(Optional.of(post));
         when(postRepo.save(any(Post.class))).thenReturn(post);
 
-        mockMvc.perform(put("/post/1")
+        mockMvc.perform(put("/post/" + post.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.title", is("TitleNew")))
-                .andExpect(jsonPath("$.content", is("ContentNew")))
+                .andExpect(jsonPath("$.id", is(post.getId())))
+                .andExpect(jsonPath("$.title", is(newTitle)))
+                .andExpect(jsonPath("$.content", is(newContent)))
                 .andExpect(jsonPath("$.timestamp", is("2023-05-14T00:00:00")));
     }
 
     @Test
     void updatePost_TitleNull_403Status() throws Exception {
         PostRequest request = new PostRequest();
+        String newContent = faker.pokemon().location();
         request.setTitle(null);
-        request.setContent("Content");
+        request.setContent(newContent);
 
-        mockMvc.perform(put("/post/1")
+        mockMvc.perform(put("/post/" + post.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -147,10 +152,11 @@ public class PostControllerIT {
     @Test
     void updatePost_ContentNull_403Status() throws Exception {
         PostRequest request = new PostRequest();
-        request.setTitle("Title");
+        String newTitle = faker.pokemon().name();
+        request.setTitle(newTitle);
         request.setContent(null);
 
-        mockMvc.perform(put("/post/1")
+        mockMvc.perform(put("/post/" + post.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -159,37 +165,36 @@ public class PostControllerIT {
     @Test
     public void updatePost_EntityNotFound_404Status() throws Exception {
         PostRequest request = new PostRequest();
-        request.setTitle("Title");
-        request.setContent("Content");
+        String newTitle = faker.pokemon().name();
+        String newContent = faker.pokemon().location();
+        request.setTitle(newTitle);
+        request.setContent(newContent);
 
-        when(postRepo.findById(1)).thenReturn(Optional.empty());
+        when(postRepo.findById(post.getId())).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/post/1")
+        mockMvc.perform(put("/post/" + post.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", is("Entity with id=1 not found")));
+                .andExpect(jsonPath("$.message", is("Entity with id=" + post.getId() + " not found")));
     }
 
     @Test
     void deletePost_Ok() throws Exception {
-        post.setId(1);
-        post.setTitle("Title");
-        post.setContent("Content");
-        when(postRepo.findById(1)).thenReturn(Optional.of(post));
+        when(postRepo.findById(post.getId())).thenReturn(Optional.of(post));
 
-        mockMvc.perform(delete("/post/1"))
+        mockMvc.perform(delete("/post/" + post.getId()))
                 .andExpect(status().isOk());
         verify(postRepo, times(1)).delete(post);
     }
 
     @Test
     public void deletePost_EntityNotFound_404Status() throws Exception {
-        when(postRepo.findById(1)).thenReturn(Optional.empty());
+        when(postRepo.findById(post.getId())).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/post/1"))
+        mockMvc.perform(delete("/post/" + post.getId()))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", is("Entity with id=1 not found")));
+                .andExpect(jsonPath("$.message", is("Entity with id=" + post.getId() + " not found")));
     }
 
 }
